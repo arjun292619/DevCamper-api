@@ -5,6 +5,9 @@ const express = require('express');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
 
+//Route Files
+const bootcamps = require('./routes/bootcamps');
+
 dotenv.config({ path: './config/config.env' });
 const accessLogStream = fs.createWriteStream(
   path.join(__dirname, 'logs', 'access.log'),
@@ -13,6 +16,9 @@ const accessLogStream = fs.createWriteStream(
 
 const app = express();
 
+app.use('/api/v1/bootcamps', bootcamps);
+
+//Screen Logger and File Logger
 app.use(morgan('short'));
 app.use(morgan('combined', { stream: accessLogStream }));
 
