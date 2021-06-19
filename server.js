@@ -1,29 +1,61 @@
+//core modules
 const fs = require('fs');
 const path = require('path');
 
+//external node packages
 const express = require('express');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
+const colors = require('colors');
 
-//Route Files
+//internal manual utils and config files
+const connectDB = require('./config/db');
+const errorHandler = require('./middleware/error');
+
+//load env variables
+dotenv.config({ path: './config/config.env' });
+
+//Route Module Files
 const bootcamps = require('./routes/bootcamps');
 
-dotenv.config({ path: './config/config.env' });
+//Database Connection
+connectDB();
+
+const app = express();
+
+//Body and JSON Parser
+app.use(express.json());
+
+//Screen Logger and File Logger
 const accessLogStream = fs.createWriteStream(
   path.join(__dirname, 'logs', 'access.log'),
   { flags: 'a' }
 );
-
-const app = express();
-
-app.use('/api/v1/bootcamps', bootcamps);
-
-//Screen Logger and File Logger
-app.use(morgan('short'));
+if ((process.env.NODE_ENV = 'development')) {
+  app.use(morgan('dev'));
+}
 app.use(morgan('combined', { stream: accessLogStream }));
 
-PORT = process.env.PORT || 4000;
+//Mount Routers
+app.use('/api/v1/bootcamps', bootcamps);
 
-app.listen(PORT, () => {
-  console.log(`Application started on port ${PORT} in ${process.env.NODE_ENV}`);
+//custom error handler middleware
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 4000;
+
+const server = app.listen(PORT, () => {
+  console.log(
+    `Application started on port ${PORT} in ${process.env.NODE_ENV} environment`
+      .yellow.bold
+  );
+});
+
+//handle Unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+  console.log(`Error: ${err.message}`.red);
+  //Close the server and exit the process
+  server.close(() => {
+    process.exit(1);
+  });
 });
